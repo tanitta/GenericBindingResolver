@@ -1,5 +1,7 @@
 # GenericBindingResolver
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/tanitta/GenericBindingResolver/blob/main/LICENSE)
+
 GenericBindingResolver is a Unity Editor tool that records object-reference bindings on a target component as stable hierarchy paths, then re-applies them when the scene loads. It is designed to reduce prefab merge conflicts and keep bindings intact across team workflows.
 
 ## Features
