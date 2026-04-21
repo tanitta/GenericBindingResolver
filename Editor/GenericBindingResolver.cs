@@ -22,7 +22,7 @@ namespace trit.GenericBindingResolver{
 
         public List<GenericBinding> _genericBindings = new List<GenericBinding>();
 
-        [HideInInspector]
+        // [HideInInspector]
         [SerializeField]
         public GameObject _applyTargetPrefab;
 
