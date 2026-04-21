@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.SceneManagement;
 
 namespace trit.GenericBindingResolver{
 
@@ -31,6 +30,7 @@ namespace trit.GenericBindingResolver{
         public void Collect(){
             var result = new List<GenericBinding>();
             if (_targetComponent == null)return;
+            var resolverPath = SceneUtils.GetHierarchyPath(gameObject);
 
             var so = new SerializedObject(_targetComponent);
             var it = so.GetIterator();
@@ -51,8 +51,8 @@ namespace trit.GenericBindingResolver{
                 var binding = new GenericBinding
                 {
                     propertyPath = it.propertyPath,
-                    hierarchyPath = SceneUtils.GetHierarchyPath(obj),
-                    sceneName = obj is GameObject go ? go.scene.name : (obj as Component).gameObject.scene.name,
+                    hierarchyPath = SceneUtils.GetRelativePath(resolverPath, SceneUtils.GetHierarchyPath(obj)),
+                    refKind = obj is Component ? ObjectRefKind.Component : ObjectRefKind.GameObject,
                     componentTypeAQN = (obj is Component) ? obj.GetType().AssemblyQualifiedName : null,
                     componentIndexSameType = (obj is Component c) ? SceneUtils.GetComponentIndexSameType(c) : -1,
                 };
@@ -77,16 +77,15 @@ namespace trit.GenericBindingResolver{
         [ContextMenu("GBR/Apply")]
         public void Apply(){
             var genericBindings = _genericBindings.OrderBy(b => b.propertyPath).ToList();
+            var resolverPath = SceneUtils.GetHierarchyPath(gameObject);
 
             foreach(var binding in genericBindings){
                 var so = new SerializedObject(_targetComponent);
                 var prop = so.FindProperty(binding.propertyPath);
                 if (prop == null) continue;
 
-                var targetScene = SceneManager.GetSceneByName(binding.sceneName);
-                if (!targetScene.IsValid()) continue;
-
-                var targetGO = SceneUtils.FindGameObjectFromPath(binding.hierarchyPath);
+                var targetPath = SceneUtils.GetAbsolutePath(binding.hierarchyPath, resolverPath);
+                var targetGO = SceneUtils.FindGameObjectFromPath(targetPath);
                 if (targetGO == null) continue;
 
                 UnityEngine.Object targetObj = null;
@@ -126,7 +125,6 @@ namespace trit.GenericBindingResolver{
     public struct GenericBinding
     {
         public string propertyPath;
-        public string sceneName;
         public string hierarchyPath;
         public ObjectRefKind refKind;
         public string componentTypeAQN;

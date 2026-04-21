@@ -78,7 +78,7 @@ namespace trit.GenericBindingResolver
                 current = current.parent;
                 path = current.name + _siblingBracketL + GetSiblingIndexEachSameNames(current) + _siblingBracketR + "/" + path;
             }
-            return path;
+            return GetSceneElement(current.gameObject.scene) + "/" + path;
         }
 
         public static string GetHierarchyPath(UnityEngine.Object o)
@@ -91,11 +91,18 @@ namespace trit.GenericBindingResolver
 
         public static string ConvertRelativePathToAbsolute(string relativePath, string fromPath)
         {
+            if (string.IsNullOrEmpty(relativePath)) return fromPath;
+            if (TryGetSceneByPathRoot(relativePath.Split('/')[0], out _)) return relativePath;
+
             List<string> baseElements = new List<string>(fromPath.Split('/'));
             string[] relativeElements = relativePath.Split('/');
 
             foreach (var element in relativeElements)
             {
+                if (element == "." || string.IsNullOrEmpty(element))
+                {
+                    continue;
+                }
                 if (element == "..")
                 {
                     // 一つ上の階層に移動
@@ -109,6 +116,11 @@ namespace trit.GenericBindingResolver
                 }
             }
             return string.Join("/", baseElements);
+        }
+
+        public static string GetAbsolutePath(string path, string fromPath)
+        {
+            return ConvertRelativePathToAbsolute(path, fromPath);
         }
 
         public static string GetRelativePath(string fromPath, string toPath)
@@ -150,12 +162,16 @@ namespace trit.GenericBindingResolver
         public static GameObject FindGameObjectFromPath(string path)
         {
             string[] elements = path.Split('/');
+            if (elements.Length == 0) return null;
+
+            if (!TryGetSceneByPathRoot(elements[0], out var targetScene) || elements.Length <= 1) return null;
+            int rootElementIndex = 1;
 
             // Rootから探索を開始
-            string rootName = GetNameFromElement(elements[0]);
-            int rootIndex = GetSiblingIndexFromElement(elements[0]);
+            string rootName = GetNameFromElement(elements[rootElementIndex]);
+            int rootIndex = GetSiblingIndexFromElement(elements[rootElementIndex]);
             Transform current = null;
-            foreach (var root in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+            foreach (var root in targetScene.GetRootGameObjects())
             {
                 if (rootName == root.name && rootIndex == GetSiblingIndexEachSameNames(root.transform))
                 {
@@ -167,7 +183,7 @@ namespace trit.GenericBindingResolver
             if (current == null) return null; // Rootが見つからなかった場合
 
             // /で分割して各階層に分ける
-            for (int i = 1; i < elements.Length; i++) // 0番目はすでにRootとして処理したので1から
+            for (int i = rootElementIndex + 1; i < elements.Length; i++)
             {
                 bool isFound = false;
                 foreach (Transform child in current)
@@ -186,6 +202,43 @@ namespace trit.GenericBindingResolver
             }
 
             return current.gameObject;
+        }
+
+        static bool TryGetSceneByPathRoot(string pathRoot, out Scene scene)
+        {
+            var sceneName = GetNameFromElement(pathRoot);
+            var sceneIndex = GetSiblingIndexFromElement(pathRoot);
+            var scenes = AllScenes().Where(s => s.name == sceneName).ToList();
+            scene = default;
+
+            if (scenes.Count == 0)
+            {
+                return false;
+            }
+
+            if (sceneIndex < 0)
+            {
+                if (scenes.Count != 1)
+                {
+                    return false;
+                }
+
+                scene = scenes[0];
+                return true;
+            }
+
+            if (sceneIndex >= scenes.Count)
+            {
+                return false;
+            }
+
+            scene = scenes[sceneIndex];
+            return scene.IsValid();
+        }
+
+        static string GetSceneElement(Scene scene)
+        {
+            return scene.name + _siblingBracketL + GetSiblingIndexEachSameNames(scene) + _siblingBracketR;
         }
 
         static string GetHierarchyPath(UnityEngine.Component c)
@@ -249,7 +302,7 @@ namespace trit.GenericBindingResolver
             List<Transform> children;
             if (target.parent == null)
             {
-                children = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Select(o => o.transform).ToList();
+                children = target.gameObject.scene.GetRootGameObjects().Select(o => o.transform).ToList();
             }
             else
             {
@@ -264,6 +317,12 @@ namespace trit.GenericBindingResolver
             // var sameNames = Resources.FindObjectsOfTypeAll<Transform>().Where(t => GetHierarchyPath(t) == path).ToList();
             // var hash = target.GetHashCode();
             // return sameNames.FindIndex(t => t.GetHashCode() == hash);
+        }
+
+        static int GetSiblingIndexEachSameNames(Scene target)
+        {
+            var scenes = AllScenes().Where(s => s.name == target.name).ToList();
+            return scenes.FindIndex(s => s.handle == target.handle);
         }
     }
 }

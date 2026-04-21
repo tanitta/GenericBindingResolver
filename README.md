@@ -5,7 +5,7 @@ GenericBindingResolver is a Unity Editor tool that records object-reference bind
 ## Features
 
 - Collects all `ObjectReference` properties from a target component
-- Stores references as hierarchy paths with sibling indices
+- Stores references as resolver-relative hierarchy paths with sibling indices
 - Re-applies bindings automatically when a scene opens
 - Supports GameObject and Component references
 - Optional one-click collect + apply-to-prefab workflow
@@ -41,7 +41,7 @@ When a scene opens, the resolver automatically re-applies the saved bindings to 
 ## Workflow Notes
 
 - The resolver scans serialized properties on the target component and records any non-null object references.
-- Binding data is stored as a hierarchy path that includes sibling indices to disambiguate same-name objects.
+- Binding data is stored as a hierarchy path relative to the resolver GameObject and includes sibling indices to disambiguate same-name objects.
 - References are re-linked by matching the saved path to the active scene objects.
 
 ## Limitations
