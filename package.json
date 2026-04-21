@@ -1,6 +1,6 @@
 {
   "name": "net.tanitta.generic-binding-resolver",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "displayName": "GenericBindingResolver",
   "unity": "2022.3",
   "description": "GenericBindingResolver records Unity object bindings as hierarchy paths and restores them on scene load to reduce prefab conflicts."
